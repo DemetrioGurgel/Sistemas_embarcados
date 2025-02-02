@@ -132,6 +132,13 @@ void app_main() {
 
 ## Definições Importantes
 
+### Endereço I2C
+O endereço padrão do MPU6050 é `0x68`, podendo ser `0x69` se o pino AD0 estiver conectado ao VCC.
+
+```c
+#define MPU6050_I2C_ADDRESS 0x68
+```
+
 ### `mpu6050_compute_euler_angles_from_accel`
 Calcula os ângulos de Euler (pitch e roll) a partir da aceleração.
 
