@@ -101,22 +101,68 @@ printf("Giroscópio: X=%.2f, Y=%.2f, Z=%.2f (°/s)\n", gx, gy, gz);
 
 ---
 
-## Definições Importantes
-
-### Endereço I2C
-O endereço padrão do MPU6050 é `0x68`, podendo ser `0x69` se o pino AD0 estiver conectado ao VCC.
+### Passo 5: Calcular Ângulos de Euler (Pitch e Roll)
+A partir dos dados do acelerômetro, podemos estimar os ângulos de inclinação:
 
 ```c
-#define MPU6050_I2C_ADDRESS 0x68
+#include "mpu6050.h"
+
+void app_main() {
+    i2c_master_init();
+
+    if (mpu6050_init(I2C_NUM_0) != ESP_OK) {
+        printf("Erro ao inicializar o MPU6050.\n");
+        return;
+    }
+
+    float accX, accY, accZ, pitch, roll;
+    
+    // Ler aceleração
+    if (mpu6050_read_accel(I2C_NUM_0, &accX, &accY, &accZ) == ESP_OK) {
+        // Calcular ângulos de pitch e roll
+        mpu6050_compute_euler_angles_from_accel(accX, accY, accZ, &pitch, &roll);
+        printf("Pitch: %.2f°, Roll: %.2f°\n", pitch, roll);
+    } else {
+        printf("Erro ao ler aceleração do MPU6050.\n");
+    }
+}
 ```
 
-### Funções Principais
+---
 
-- `mpu6050_init(i2c_port_t i2c_port)`: Inicializa o sensor.
-- `mpu6050_read_all(i2c_port_t i2c_port, mpu6050_data_t *out_data)`: Lê aceleração, giroscópio e temperatura.
-- `mpu6050_read_accel(i2c_port_t i2c_port, float *accX, float *accY, float *accZ)`: Lê apenas aceleração.
-- `mpu6050_read_gyro(i2c_port_t i2c_port, float *gyroX, float *gyroY, float *gyroZ)`: Lê apenas giroscópio.
-- `mpu6050_compute_euler_angles_from_accel(float accX, float accY, float accZ, float *pitch, float *roll)`: Calcula ângulos de pitch e roll.
+## Definições Importantes
+
+### `mpu6050_compute_euler_angles_from_accel`
+Calcula os ângulos de Euler (pitch e roll) a partir da aceleração.
+
+##### Protótipo
+```c
+void mpu6050_compute_euler_angles_from_accel(float accX, float accY, float accZ,
+                                             float *pitch, float *roll);
+```
+
+##### Parâmetros
+- `accX`: Aceleração no eixo X (g).
+- `accY`: Aceleração no eixo Y (g).
+- `accZ`: Aceleração no eixo Z (g).
+- `pitch`: Ponteiro onde será armazenado o ângulo de inclinação em torno do eixo Y (graus).
+- `roll`: Ponteiro onde será armazenado o ângulo de inclinação em torno do eixo X (graus).
+
+##### Retorno
+Esta função não retorna um valor. Os resultados são armazenados nos ponteiros `pitch` e `roll`.
+
+##### Fórmula
+Os ângulos são calculados com base nos valores de aceleração usando as fórmulas:
+
+- **Pitch (inclinação para frente/trás):**  
+  \[ 	heta = rctan \left( rac{	ext{accX}}{\sqrt{	ext{accY}^2 + 	ext{accZ}^2}} 
+ight) 	imes rac{180}{\pi} \]
+
+- **Roll (inclinação lateral):**  
+  \[ \phi = rctan \left( rac{	ext{accY}}{	ext{accZ}} 
+ight) 	imes rac{180}{\pi} \]
+
+Essas equações assumem que o sensor está parado e sujeito apenas à gravidade.
 
 ---
 
