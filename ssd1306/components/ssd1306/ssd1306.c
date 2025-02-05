@@ -9,18 +9,24 @@
 #define TAG "SSD1306"
 
 /* Buffer interno de exibição e coordenadas do cursor */
-static uint8_t ssd1306_buffer[SSD1306_BUFFER_SIZE];
-static uint8_t cursor_x = 0;
-static uint8_t cursor_y = 0;
+static uint8_t ssd1306_buffer[SSD1306_BUFFER_SIZE];  /**< Buffer de 1 bit por pixel para o display SSD1306 */
+static uint8_t cursor_x = 0;   /**< Coordenada X do cursor para escrita de texto */
+static uint8_t cursor_y = 0;   /**< Coordenada Y do cursor para escrita de texto */
 
 /* Variável global de configuração e handle SPI (se utilizado) */
-static ssd1306_config_t ssd1306_dev;
-static spi_device_handle_t ssd1306_spi_handle = NULL;  // válido se bus for SPI
+static ssd1306_config_t ssd1306_dev;                 /**< Variável global que armazena a configuração do display */
+static spi_device_handle_t ssd1306_spi_handle = NULL;  /**< Handle para o dispositivo SPI, válido se o bus configurado for SPI */
 
 /* --- Funções auxiliares de comunicação --- */
 
 /**
- * @brief Envia um comando para o display.
+ * @brief Envia um comando para o display SSD1306.
+ *
+ * De acordo com a interface configurada (I²C ou SPI), esta função prepara e envia
+ * um comando para o display.
+ *
+ * @param cmd Comando a ser enviado.
+ * @return esp_err_t ESP_OK em caso de sucesso ou código de erro em falhas de comunicação.
  */
 static esp_err_t ssd1306_send_command(uint8_t cmd)
 {
@@ -37,10 +43,10 @@ static esp_err_t ssd1306_send_command(uint8_t cmd)
         return ret;
     }
     else if (ssd1306_dev.bus == SSD1306_BUS_SPI) {
-        /* Para SPI, defina o pino D/C em 0 para comando */
+        /* Para SPI, define o pino D/C como 0 para indicar comando */
         gpio_set_level(ssd1306_dev.iface.spi.dc_pin, 0);
         spi_transaction_t t = {
-            .length = 8,      // tamanho em bits
+            .length = 8,      // Tamanho em bits
             .tx_buffer = &cmd,
         };
         return spi_device_transmit(ssd1306_spi_handle, &t);
@@ -49,7 +55,14 @@ static esp_err_t ssd1306_send_command(uint8_t cmd)
 }
 
 /**
- * @brief Envia dados para o display.
+ * @brief Envia dados para o display SSD1306.
+ *
+ * Transmite um bloco de dados (buffer) para o display, utilizando a interface 
+ * configurada (I²C ou SPI).
+ *
+ * @param data Ponteiro para os dados a serem enviados.
+ * @param length Número de bytes a serem transmitidos.
+ * @return esp_err_t ESP_OK em caso de sucesso ou código de erro em falhas de comunicação.
  */
 static esp_err_t ssd1306_send_data(const uint8_t *data, size_t length)
 {
@@ -66,10 +79,10 @@ static esp_err_t ssd1306_send_data(const uint8_t *data, size_t length)
         return ret;
     }
     else if (ssd1306_dev.bus == SSD1306_BUS_SPI) {
-        /* Para SPI, defina o pino D/C em 1 para dados */
+        /* Para SPI, define o pino D/C como 1 para indicar dados */
         gpio_set_level(ssd1306_dev.iface.spi.dc_pin, 1);
         spi_transaction_t t = {
-            .length = length * 8,   // tamanho em bits
+            .length = length * 8,   // Tamanho em bits
             .tx_buffer = data,
         };
         return spi_device_transmit(ssd1306_spi_handle, &t);
@@ -78,6 +91,16 @@ static esp_err_t ssd1306_send_data(const uint8_t *data, size_t length)
 }
 
 /* --- Função de inicialização --- */
+
+/**
+ * @brief Inicializa o display SSD1306.
+ *
+ * Configura a interface de comunicação (I²C ou SPI), inicializa o barramento, 
+ * realiza a sequência de inicialização do display e atualiza o buffer inicial.
+ *
+ * @param config Ponteiro para a estrutura de configuração ::ssd1306_config_t.
+ * @return esp_err_t ESP_OK em caso de sucesso ou código de erro em falhas.
+ */
 esp_err_t ssd1306_init(const ssd1306_config_t *config)
 {
     memcpy(&ssd1306_dev, config, sizeof(ssd1306_config_t));
@@ -130,9 +153,9 @@ esp_err_t ssd1306_init(const ssd1306_config_t *config)
             ESP_LOGE(TAG, "Erro ao adicionar dispositivo SPI");
             return err;
         }
-        /* Configure o pino D/C como saída */
+        /* Configura o pino D/C como saída */
         gpio_set_direction(ssd1306_dev.iface.spi.dc_pin, GPIO_MODE_OUTPUT);
-        /* Se houver pino de RESET, faça a sequência de reset */
+        /* Se houver pino de RESET, realiza a sequência de reset */
         if (ssd1306_dev.iface.spi.rst_pin != GPIO_NUM_NC) {
             gpio_set_direction(ssd1306_dev.iface.spi.rst_pin, GPIO_MODE_OUTPUT);
             gpio_set_level(ssd1306_dev.iface.spi.rst_pin, 0);
@@ -183,6 +206,13 @@ esp_err_t ssd1306_init(const ssd1306_config_t *config)
 }
 
 /* --- Manipulação do buffer --- */
+
+/**
+ * @brief Limpa o buffer interno do display.
+ *
+ * Zera todos os bytes do buffer, apagando todos os pixels, e reseta as posições
+ * do cursor para (0,0).
+ */
 void ssd1306_clear_buffer(void)
 {
     memset(ssd1306_buffer, 0x00, SSD1306_BUFFER_SIZE);
@@ -190,11 +220,24 @@ void ssd1306_clear_buffer(void)
     cursor_y = 0;
 }
 
+/**
+ * @brief Preenche o buffer interno do display.
+ *
+ * Define todos os pixels do buffer como ligados (valor 0xFF em cada byte).
+ */
 void ssd1306_fill_buffer(void)
 {
     memset(ssd1306_buffer, 0xFF, SSD1306_BUFFER_SIZE);
 }
 
+/**
+ * @brief Atualiza o display com o conteúdo do buffer interno.
+ *
+ * Configura os endereços de coluna e página do display e envia o buffer completo
+ * para atualização da imagem exibida.
+ *
+ * @return esp_err_t ESP_OK em caso de sucesso ou código de erro em falha de comunicação.
+ */
 esp_err_t ssd1306_update(void)
 {
     esp_err_t err;
@@ -219,6 +262,17 @@ esp_err_t ssd1306_update(void)
 }
 
 /* --- Funções gráficas --- */
+
+/**
+ * @brief Desenha um pixel no buffer interno.
+ *
+ * Calcula o índice e a máscara de bit correspondentes à posição (x, y) e define o
+ * pixel como ligado ou desligado, conforme o valor de color.
+ *
+ * @param x Coordenada X do pixel.
+ * @param y Coordenada Y do pixel.
+ * @param color 1 para ligar o pixel, 0 para apagá-lo.
+ */
 void ssd1306_draw_pixel(uint8_t x, uint8_t y, uint8_t color)
 {
     if (x >= SSD1306_WIDTH || y >= SSD1306_HEIGHT) {
@@ -232,13 +286,23 @@ void ssd1306_draw_pixel(uint8_t x, uint8_t y, uint8_t color)
         ssd1306_buffer[byte_index] &= ~bit_mask;
 }
 
+/**
+ * @brief Define a posição do cursor para escrita de texto.
+ *
+ * Atualiza as variáveis globais que determinam a posição onde o próximo caractere
+ * será desenhado.
+ *
+ * @param x Nova coordenada X do cursor.
+ * @param y Nova coordenada Y do cursor.
+ */
 void ssd1306_set_cursor(uint8_t x, uint8_t y)
 {
     cursor_x = x;
     cursor_y = y;
 }
 
- static const uint8_t font5x7[][5] = {
+/* Fonte 5x7 para renderização de caracteres */
+static const uint8_t font5x7[][5] = {
     /*  0 (32) ' ' */ {0x00, 0x00, 0x00, 0x00, 0x00},
     /*  1 (33) '!' */ {0x00, 0x00, 0x5F, 0x00, 0x00},
     /*  2 (34) '"' */ {0x00, 0x07, 0x00, 0x07, 0x00},
@@ -342,9 +406,18 @@ void ssd1306_set_cursor(uint8_t x, uint8_t y)
     /* 95 (127) '⌂' */ {0x7F, 0x7F, 0x7F, 0x7F, 0x7F}  
 };
 
-#define FONT_WIDTH  5
-#define FONT_HEIGHT 7
+#define FONT_WIDTH  5  /**< Largura da fonte em pixels */
+#define FONT_HEIGHT 7  /**< Altura da fonte em pixels */
 
+/**
+ * @brief Desenha um caractere utilizando a fonte 5x7.
+ *
+ * Renderiza um caractere na posição atual do cursor utilizando a fonte definida.
+ * Se o caractere for '\n', o cursor é movido para o início da próxima linha.
+ * Caso o caractere esteja fora do intervalo imprimível, é substituído por '?'.
+ *
+ * @param c Caractere a ser desenhado.
+ */
 void ssd1306_draw_char(char c)
 {
     if (c == '\n') {
@@ -379,6 +452,14 @@ void ssd1306_draw_char(char c)
     }
 }
 
+/**
+ * @brief Exibe uma string de texto no buffer.
+ *
+ * Percorre a string caractere a caractere e utiliza ::ssd1306_draw_char para
+ * renderizar cada um deles na posição atual do cursor.
+ *
+ * @param str Ponteiro para a string terminada em '\0'.
+ */
 void ssd1306_draw_text(const char* str)
 {
     while (*str) {
@@ -386,39 +467,107 @@ void ssd1306_draw_text(const char* str)
     }
 }
 
-/* --- Função de linha  --- */
+/**
+ * @brief Desenha uma linha reta utilizando o algoritmo de Bresenham.
+ *
+ * Traça uma linha entre os pontos (x0, y0) e (x1, y1) definindo os pixels
+ * correspondentes com a cor especificada.
+ *
+ * @param x0 Coordenada X do ponto inicial.
+ * @param y0 Coordenada Y do ponto inicial.
+ * @param x1 Coordenada X do ponto final.
+ * @param y1 Coordenada Y do ponto final.
+ * @param color Cor da linha (1 para pixel ligado, 0 para desligado).
+ */
 void ssd1306_draw_line(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t color) {
+    /* Verifica se os pontos estão fora da área útil do display */
+    if (x0 >= SSD1306_WIDTH || y0 >= SSD1306_HEIGHT ||
+        x1 >= SSD1306_WIDTH || y1 >= SSD1306_HEIGHT) {
+        return;
+    }
+
     int16_t dx = abs(x1 - x0);
     int16_t dy = abs(y1 - y0);
     int16_t sx = (x0 < x1) ? 1 : -1;
     int16_t sy = (y0 < y1) ? 1 : -1;
     int16_t err = dx - dy;
-    
-    while(1) {
+
+    while (1) {
         ssd1306_draw_pixel(x0, y0, color);
-        if(x0 == x1 && y0 == y1) break;
+        if (x0 == x1 && y0 == y1) break;
+
         int16_t e2 = 2 * err;
-        if(e2 > -dy) {
+        if (e2 > -dy) {
             err -= dy;
             x0 += sx;
         }
-        if(e2 < dx) {
+        if (e2 < dx) {
             err += dx;
             y0 += sy;
         }
     }
 }
 
-/* --- Função de bitmap  --- */
-void ssd1306_draw_bitmap(uint8_t x, uint8_t y, const uint8_t *bitmap, uint8_t width, uint8_t height) {
-    for(uint8_t j = 0; j < height; j++) {
-        for(uint8_t i = 0; i < width; i++) {
+/**
+ * @brief Desenha um bitmap no buffer.
+ *
+ * Desenha um bitmap monocromático a partir do ponto (x, y). O bitmap é organizado
+ * em páginas, onde cada página possui 8 linhas (bits). Cada byte do bitmap representa
+ * uma coluna de 8 pixels.
+ *
+ * @param x Posição X inicial onde o bitmap será desenhado.
+ * @param y Posição Y inicial onde o bitmap será desenhado.
+ * @param bitmap Ponteiro para os dados do bitmap (1 bit por pixel).
+ * @param width Largura do bitmap em pixels.
+ * @param height_pixels Altura do bitmap em pixels.
+ */
+void ssd1306_draw_bitmap(uint8_t x, uint8_t y, const uint8_t *bitmap, uint8_t width, uint8_t height_pixels) {
+    uint8_t pages = height_pixels / 8;  // Cada page possui 8 linhas
+    for (uint8_t j = 0; j < pages; j++) {
+        for (uint8_t i = 0; i < width; i++) {
             uint8_t byte = bitmap[j * width + i];
-            for(uint8_t b = 0; b < 8; b++) {
-                ssd1306_draw_pixel(x + i, y + j * 8 + b, (byte >> b) & 0x01);
+            /* Percorre os 8 bits do byte (do bit 7 ao bit 0) */
+            for (uint8_t b = 0; b < 8; b++) {
+                uint8_t bit = (byte >> (7 - b)) & 0x01;
+                ssd1306_draw_pixel(x + i, y + j * 8 + b, bit);
             }
         }
     }
 }
 
+/**
+ * @brief Desenha um círculo utilizando o algoritmo de Bresenham.
+ *
+ * Desenha um círculo centrado em (x0, y0) com o raio especificado. São desenhados
+ * os pontos correspondentes aos 8 octantes do círculo.
+ *
+ * @param x0 Coordenada X do centro do círculo.
+ * @param y0 Coordenada Y do centro do círculo.
+ * @param radius Raio do círculo.
+ * @param color Cor do círculo (1 para ligar os pixels, 0 para apagá-los).
+ */
+void ssd1306_draw_circle(int x0, int y0, int radius, int color) {
+    int x = radius;
+    int y = 0;
+    int err = 0;
 
+    while (x >= y) {
+        ssd1306_draw_pixel(x0 + x, y0 + y, color);
+        ssd1306_draw_pixel(x0 + y, y0 + x, color);
+        ssd1306_draw_pixel(x0 - y, y0 + x, color);
+        ssd1306_draw_pixel(x0 - x, y0 + y, color);
+        ssd1306_draw_pixel(x0 - x, y0 - y, color);
+        ssd1306_draw_pixel(x0 - y, y0 - x, color);
+        ssd1306_draw_pixel(x0 + y, y0 - x, color);
+        ssd1306_draw_pixel(x0 + x, y0 - y, color);
+
+        y++;
+        if (err <= 0) {
+            err += 2 * y + 1;
+        }
+        if (err > 0) {
+            x--;
+            err -= 2 * x + 1;
+        }
+    }
+}
