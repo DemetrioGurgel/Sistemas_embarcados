@@ -1,0 +1,67 @@
+#include <stdio.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "driver/i2c.h"
+#include "driver/gpio.h"
+#include "esp_log.h"
+#include "ssd1306.h"
+
+#define I2C_SCL_PIN         GPIO_NUM_22
+#define I2C_SDA_PIN         GPIO_NUM_21
+#define I2C_NUM_PORT        I2C_NUM_0
+#define SSD1306_I2C_ADDRESS 0x3C  // Verifique se este é o endereço do seu display
+
+
+void app_main(void)
+{
+    /* Configuração do display SSD1306 via I²C */
+    ssd1306_config_t config = {
+        .bus = SSD1306_BUS_I2C,
+        .iface.i2c = {
+            .sda_pin   = I2C_SDA_PIN,
+            .scl_pin   = I2C_SCL_PIN,
+            .clk_speed = 400000,      // Velocidade do I²C (400 kHz)
+            .port      = I2C_NUM_PORT,
+            .address   = SSD1306_I2C_ADDRESS,
+        },
+    };
+
+    if (ssd1306_init(&config) != ESP_OK) {
+        ESP_LOGE("MAIN", "Erro ao iniciar o display SSD1306");
+        return;
+    }
+
+    /* Limpa o buffer de exibição */
+    ssd1306_clear_buffer();
+
+    /* --- Desenha as figuras organizadas por quadrantes --- */
+
+    // Quadrante Superior Esquerdo: Retângulo
+    // Retângulo com canto superior esquerdo em (2,2) e inferior direito em (52,27)
+    ssd1306_draw_line(2, 2, 52, 2, 1);    // Borda superior
+    ssd1306_draw_line(52, 2, 52, 27, 1);   // Borda direita
+    ssd1306_draw_line(52, 27, 2, 27, 1);   // Borda inferior
+    ssd1306_draw_line(2, 27, 2, 2, 1);     // Borda esquerda
+
+    // Quadrante Superior Direito: Triângulo
+    // Triângulo com vértices em (70,5), (120,5) e (95,25)
+    ssd1306_draw_line(70, 5, 120, 5, 1);   // Base do triângulo
+    ssd1306_draw_line(120, 5, 95, 25, 1);   // Lado direito
+    ssd1306_draw_line(95, 25, 70, 5, 1);    // Lado esquerdo
+
+    // Quadrante Inferior Esquerdo: Círculo
+    // Círculo com centro em (32,48) e raio 12
+    ssd1306_draw_circle(32, 48, 12, 1);
+
+    // Quadrante Inferior Direito: Linha Diagonal
+    // Linha diagonal de (70,35) até (120,60)
+    ssd1306_draw_line(70, 35, 120, 60, 1);
+
+    /* Atualiza o display com o conteúdo do buffer */
+    ssd1306_update();
+
+    /* Loop infinito para manter o programa ativo */
+    while (1) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
