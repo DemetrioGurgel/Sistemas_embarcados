@@ -1,0 +1,90 @@
+# DS18B20 Sensor Library for ESP‑IDF
+
+Esta biblioteca fornece uma implementação leve do protocolo 1‑Wire para comunicação com o sensor de temperatura DS18B20. Inspirada nas bibliotecas Arduino (OneWire e DallasTemperature), a API é simples e direta, permitindo que o usuário inicialize o sensor, configure a resolução, solicite a conversão de temperatura e leia o valor em graus Celsius, tudo isso utilizando apenas as funções nativas do ESP‑IDF (sem dependências externas).
+
+## Recursos
+
+- **Implementação do protocolo 1‑Wire:** Todas as operações de reset, escrita e leitura de bits e bytes são gerenciadas diretamente.
+- **Interface inspirada em Arduino:** Funções intuitivas como `begin()`, `setResolution()`, `requestTemperatures()` e `getTempC()`.
+- **Compatibilidade ESP‑IDF:** Desenvolvida para uso com ESP32 e ESP‑IDF.
+- **Sem bibliotecas externas:** Utiliza apenas as APIs do ESP‑IDF (GPIO, delays, FreeRTOS).
+
+## Requisitos
+
+- **ESP‑IDF:** Certifique-se de ter o ambiente ESP‑IDF instalado e configurado.
+- **ESP32:** O código foi desenvolvido e testado para placas ESP32.
+- **DS18B20:** Sensor de temperatura DS18B20 com resistor de pull‑up (geralmente 4.7 kΩ) conectado ao pino de dados.
+- **Cabo e conexões adequadas:** Conexões corretas entre o sensor e o ESP32 (alimentação, terra e dados).
+
+## Instalação
+
+1. **Adicionar os arquivos da biblioteca:**  
+   - Copie `ds18b20.h` e `ds18b20.c` para o diretório do seu projeto ESP‑IDF.
+2. **Incluir no seu projeto:**  
+   - Certifique-se de que os arquivos da biblioteca são compilados juntamente com o seu código (adicione-os ao CMakeLists.txt ou Makefile, conforme seu ambiente).
+
+## Uso
+
+A biblioteca expõe uma API simples para uso do DS18B20. Os passos básicos para utilizar a biblioteca são:
+
+1. **Inicialização:**  
+   Configure a estrutura de dados (`ds18b20_t`) com o pino GPIO utilizado e a resolução desejada. Em seguida, chame `ds18b20_begin()` para configurar o GPIO como open-drain com pull‑up.
+
+2. **Configuração da Resolução (Opcional):**  
+   Caso deseje alterar a resolução do sensor (9, 10, 11 ou 12 bits), utilize a função `ds18b20_setResolution()`. Isso envia o comando WRITE_SCRATCHPAD para ajustar o sensor.
+
+3. **Solicitação de Conversão:**  
+   Para iniciar a medição de temperatura, chame `ds18b20_requestTemperatures()`. Essa função envia os comandos SKIP_ROM e CONVERT_T e aguarda o tempo de conversão adequado (o tempo varia conforme a resolução configurada).
+
+4. **Leitura da Temperatura:**  
+   Após a conversão, utilize `ds18b20_getTempC()` para ler os dados do sensor, que realiza um reset, envia os comandos de leitura e converte o valor bruto para graus Celsius.
+
+## Exemplo de Código
+
+Abaixo segue um exemplo de `main.c` que demonstra o uso da biblioteca:
+
+```c
+#include "ds18b20.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include <stdio.h>
+
+void app_main(void)
+{
+    // Configuração do sensor: pino de dados e resolução desejada
+    ds18b20_t sensor = {
+        .gpio_pin = GPIO_NUM_4, // Pino conectado ao DS18B20
+        .resolution = 12        // Resolução inicial: 12 bits
+    };
+
+    // Inicializa o sensor DS18B20 (configura o GPIO como open-drain com pull-up)
+    if (ds18b20_begin(&sensor) != ESP_OK) {
+        printf("Falha na inicialização do DS18B20!\n");
+        return;
+    }
+
+    // Configura a resolução do sensor (opcional, mas garante a escrita correta no scratchpad)
+    if (ds18b20_setResolution(&sensor, 12) != ESP_OK) {
+        printf("Falha ao configurar a resolução do DS18B20!\n");
+        return;
+    }
+
+    printf("DS18B20 inicializado com sucesso!\n");
+
+    while (1) {
+        // Inicia a conversão de temperatura
+        if (ds18b20_requestTemperatures(&sensor) != ESP_OK) {
+            printf("Falha ao solicitar a conversão de temperatura!\n");
+        } else {
+            float temp;
+            // Lê a temperatura em graus Celsius
+            if (ds18b20_getTempC(&sensor, &temp) == ESP_OK) {
+                printf("Temperatura: %.2f °C\n", temp);
+            } else {
+                printf("Falha na leitura da temperatura!\n");
+            }
+        }
+        // Aguarda 2 segundos entre as leituras
+        vTaskDelay(pdMS_TO_TICKS(2000));
+    }
+}
