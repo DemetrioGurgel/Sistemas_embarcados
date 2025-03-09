@@ -122,6 +122,20 @@ Cada biblioteca desenvolvida conta com uma documentação detalhada:
 
 ---
 
+## Diretório projeto final (Aquário inteligente)
+
+- O código usado no projeto pode ser acessado no seguinte link:
+
+[📂 **Acesse o PDF aqui**](projeto_aquario)
+
+---
+
+## 🎥 Demonstração do Projeto
+
+Assista ao vídeo de demonstração no YouTube:
+[📹 Clique aqui para assistir](https://youtu.be/n30qwpkAr-Y?feature=shared)
+
+---
 ## Conclusão
 
 Este projeto exemplifica a integração eficiente de sensores e atuadores no desenvolvimento de um **sistema embarcado inteligente**.
