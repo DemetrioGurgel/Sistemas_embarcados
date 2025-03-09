@@ -114,6 +114,14 @@ Cada biblioteca desenvolvida conta com uma documentação detalhada:
 
 ---
 
+## Diagrama esquemático
+
+- O diagrama pode ser acessada no seguinte link:
+
+[📂 **Acesse o PDF aqui**](Schematic_CONTROLE-DE-AQUÁRIO-COM-DE-TEMPERATURA,-MONITORAMENTO-DO-NÍVEL-DA-ÁGUA-E-ALERTAS-SONOROS_2025-03-09.pdf)
+
+---
+
 ## Conclusão
 
 Este projeto exemplifica a integração eficiente de sensores e atuadores no desenvolvimento de um **sistema embarcado inteligente**.
