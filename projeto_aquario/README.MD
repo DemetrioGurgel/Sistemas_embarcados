@@ -90,12 +90,15 @@ Verifique as conexões físicas e certifique-se de que os dispositivos estão co
    cd <Sistemas_embarcados/projeto_aquario>
 
 3. **Configure o projeto:**
+  ```bash
     idf.py menuconfig
 
 4. **Compile o projeto:**
+  ```bash
     idf.py build
 
 5. **Flash no dispositivo:**
+  ```bash
     idf.py -p <PORTA_SERIAL> flash monitor
 
 ---
