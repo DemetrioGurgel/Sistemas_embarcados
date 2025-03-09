@@ -1,7 +1,7 @@
 # Projeto de Desenvolvimento de Bibliotecas para Dispositivos Embarcados
 
 ## Objetivo
-Esta atividade tem como objetivo principal o desenvolvimento de bibliotecas para dispositivos embarcados e a aplicação prática dessas bibliotecas em um projeto final. Os alunos deverão implementar bibliotecas para o módulo MPU6050 (I2C), o display SSD1306 (SPI e I2C), o sensor de temperatura DS18B20 e o módulo SSR (Relé de Estado Sólido).
+Esta atividade tem como objetivo principal o desenvolvimento de bibliotecas para dispositivos embarcados e a aplicação prática dessas bibliotecas em um projeto final. Deverão ser implementadas bibliotecas para o módulo MPU6050 (I2C), o display SSD1306 (SPI e I2C), o sensor de temperatura DS18B20 e o módulo SSR (Relé de Estado Sólido).
 
 ## Etapa 1: Desenvolvimento de Bibliotecas
 Criar bibliotecas/componentes para os microcontroladores ESP32 em C/C++ utilizando o framework ESP-IDF para os seguintes dispositivos:
@@ -29,11 +29,11 @@ A biblioteca para o SSR deverá permitir o acionamento do relé de forma precisa
 
 ## Introdução
 
-Este projeto consiste no desenvolvimento de um **aquário inteligente**, um sistema automatizado para monitoramento e controle da temperatura da água, bem como para a detecção de inclinações indesejadas. O objetivo principal é garantir um ambiente estável e seguro para os organismos aquáticos, minimizando riscos associados a variações térmicas e possíveis acidentes relacionados à perda de água.
+Este projeto consiste no desenvolvimento de um **aquário inteligente**, um sistema automatizado para monitoramento e controle da temperatura e do nível da água. O objetivo principal é garantir um ambiente estável e seguro para os organismos aquáticos, minimizando riscos associados a variações térmicas e possíveis perdas de água.
 
-O sistema é baseado no **ESP32**, que gerencia a comunicação entre sensores, atuadores e módulos de exibição de dados. Para o monitoramento da temperatura da água, é utilizado o sensor **DS18B20**, cuja precisão permite um controle eficiente do ambiente térmico. Caso a temperatura ultrapasse os limites predefinidos, um **relé de estado sólido (SSR)** é acionado para controlar um cooler, auxiliando na estabilização térmica do sistema.
+O sistema é baseado no **ESP32**, que gerencia a comunicação entre sensores, atuadores e módulos de exibição de dados. Para o monitoramento da temperatura da água, é utilizado o sensor **DS18B20**, cuja precisão permite um controle eficiente do ambiente térmico. Caso a temperatura ultrapasse os limites predefinidos, um **relé mecânico** é acionado para controlar um cooler, além de emitir um sinal sonoro por meio de um **buzzer**, permitindo uma resposta rápida do usuário.
 
-Além disso, a segurança do conforto é aprimorada pelo uso do sensor **MPU6050**, que combina acelerômetro e giroscópio para monitorar o nível da água. Caso ocorra um vazamento ou redução anormal no nível, o sensor detecta a alteração e aciona um alerta visual no **display OLED SSD1306**, além de emitir um sinal sonoro por meio de um **buzzer**, permitindo uma resposta rápida do usuário.
+Além disso, a segurança é aprimorada pelo uso do sensor **MPU6050**, que combina acelerômetro e giroscópio para monitorar o nível da água. Caso ocorra um vazamento ou redução anormal no nível, o sensor detecta e aciona um **relé de estado sólido** para ligar uma bomba de água e completar o nível de água até um o nível de água seguro pré-definido.
 
 Este projeto apresenta uma aplicação prática de sistemas embarcados e automação, sendo uma solução inovadora para a manutenção de aquários domésticos e profissionais, promovendo maior segurança e estabilidade para os organismos aquáticos.
 
@@ -44,8 +44,9 @@ Este projeto apresenta uma aplicação prática de sistemas embarcados e automa�
 - **ESP32**: Microcontrolador principal responsável por gerenciar todos os sensores e atuadores.
 - **DS18B20**: Sensor de temperatura que mede a temperatura da água.
 - **MPU6050**: Acelerômetro e giroscópio, sensor utilizado para detectar variações no nível da água.
-- **SSD1306**: Display OLED para exibição da temperatura e avisos de inclinação.
-- **SSR (Relé de Estado Sólido)**: Controla o cooler para ajustar a temperatura da água.
+- **SSD1306**: Display OLED para exibição da temperatura, nível de água em litros, e alertas.
+- **Relé Mecânico**: Controla o cooler para ajustar a temperatura da água.
+- **SSR (Relé de Estado Sólido)**: Controla a bomba de água para manutenção do nível
 - **Cooler**: Atuador que resfria a água quando a temperatura está acima do limite desejado.
 - **Buzzer**: Emite alertas sonoros em caso de temperaturas críticas ou detecção de vazamento de água.
 
@@ -60,15 +61,17 @@ Este projeto apresenta uma aplicação prática de sistemas embarcados e automa�
 - Se a temperatura ultrapassar um limite predefinido, o **SSR** aciona o **cooler** para reduzir a temperatura da água até retornar a um nível seguro.
 
 ### 3. Detecção do Nível da Água
-- O **MPU6050** monitora variações anormais no nível da água. Em caso de vazamento ou redução inesperada, um aviso é exibido no **display OLED** e um alerta sonoro é ativado.
+- O **MPU6050** monitora o nível da água
+ 
+### 4. Controle Automático de nível
+- Se o nível estiver abaixo do nível pré-definido, o **SSR** aciona a bomba de água até atingir o nível adequado.
 
-### 4. Sistema de Alertas Sonoros
-- O **buzzer** emite sinais sonoros quando:
+### 5. Sistema de Alertas Sonoros
+  - O **buzzer** emite sinais sonoros quando:
   - A temperatura da água está fora da faixa ideal.
-  - É detectada uma redução anormal no nível da água.
 
-### 5. Interface de Usuário Intuitiva
-- O **display OLED SSD1306** exibe informações em tempo real sobre a temperatura da água e alertas de nível da água, proporcionando uma interface clara e acessível ao usuário.
+### 6. Interface de Usuário Intuitiva
+- O **display OLED SSD1306** exibe informações em tempo real sobre a temperatura da água, nível da água em litros, e alertas sobre a temperatura acima do ideal.
 
 ---
 
@@ -77,7 +80,7 @@ Este projeto apresenta uma aplicação prática de sistemas embarcados e automa�
 - **Biblioteca MPU6050**: Responsável pela leitura dos dados do acelerômetro e giroscópio via I2C.
 - **Biblioteca SSD1306**: Permite a comunicação com o display OLED via I2C.
 - **Biblioteca DS18B20**: Realiza a leitura da temperatura via comunicação 1-Wire.
-- **Biblioteca SSR**: Controla o relé de estado sólido para acionamento do cooler.
+- **Biblioteca SSR**: Controla o relé para acionamento do cooler e bomba de água.
 
 ---
 
@@ -90,13 +93,15 @@ Este projeto apresenta uma aplicação prática de sistemas embarcados e automa�
    - O **DS18B20** realiza medições periódicas e exibe os valores no **display OLED**.
 
 3. **Controle Automático de Temperatura**
-   - Se a temperatura ultrapassar o limite configurado, o **SSR** aciona o **cooler**.
-   - Caso atinja um nível crítico, um **alerta sonoro** é ativado.
+   - Se a temperatura ultrapassar o limite configurado, o **SSR** aciona o **cooler** e gera um alerta no display Oled.
 
 4. **Monitoramento do Nível da Água**
-   - O **MPU6050** detecta alterações anormais no nível da água e emite alertas visuais e sonoros.
+   - O **MPU6050** detecta o nível da água, é feito um calculo em função cúbica de forma manual para determinar a quantidade de litros de acordo com a inclinação.
 
-5. **Execução Contínua**
+5 **Controle Automático de Nível**
+  - Se o nível estiver abaixo do nível pré-definido, o **SSR** aciona a bomba de água até atingir o nível adequado que deve ser definido.
+
+6. **Execução Contínua**
    - O sistema opera em **loop contínuo**, garantindo monitoramento constante.
 
 ---
